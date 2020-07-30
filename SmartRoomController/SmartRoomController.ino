@@ -48,7 +48,12 @@ int lockPos;
 
 OneButton greenButton(6, false);
 int pinGreenButton = 6;
-int buttonState2 = LOW;
+int singleClick = false;
+
+OneButton blueButton(5, false);
+int pinBlueButton = 5;
+int doubleClick = false;
+
 
 const int NeoPin = 14;
 const int PixelNum = 16;
@@ -65,7 +70,7 @@ int Huebri = 265;
 int pinBlackButton = 23;
 bool state = true;
 bool buttonRead;
-int wemo = 3;
+int wemo = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -80,14 +85,20 @@ void setup() {
   digitalWrite(10, HIGH);
   Ethernet.begin(mac,ip);
   //delay(2000);              // Wait for Serial Monitor
-  Serial.print("LinkStatus: ");
-  Serial.println(Ethernet.linkStatus());
-  Serial.println("Ready.");
+  //Serial.print("LinkStatus: ");
+  //Serial.println(Ethernet.linkStatus());
+  //Serial.println("Ready.");
 
   greenButton.attachClick(greenButtonClick);
   greenButton.setClickTicks(250);
   greenButton.setPressTicks(2000);
   pinMode(pinGreenButton, INPUT);
+
+  blueButton.attachDoubleClick(blueButtonDoubleClick);
+  blueButton.setClickTicks(250);
+  blueButton.setPressTicks(2000);
+  //pinMode(pinBlueButton, INPUT);
+
   
   encButton.attachClick(encButtonClick);
   encButton.setClickTicks(250);
@@ -97,14 +108,7 @@ void setup() {
   pinMode(greenPin, OUTPUT);
 
   status = bme.begin(0x76);
-  if(status == false) {
-    Serial.printf("Check your wires dummy\n");
-  }
-  else
-  {
-    Serial.printf("BME is GOOD\n");
-  }
-
+  
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //Display Temp Values
   display2.begin(SSD1306_SWITCHCAPVCC, 0x3D); //Display Brightness Values
 }
@@ -115,6 +119,7 @@ void loop() {
   controlHUE();
   displayBMEValues();
   controlWEMODevices();
+  blueButton.tick();
 }
 
 void controlHUE() {
@@ -124,7 +129,7 @@ void controlHUE() {
       digitalWrite(greenPin, HIGH);
       myEnc.write(lockPos);
       activated = false; 
-      setHue(bulb,activated, 0,0);
+      //setHue(bulb,activated, 0,0);
       pixels.show();
       pixels.clear();
     }
@@ -135,8 +140,8 @@ void controlHUE() {
       lockPos = myEnc.read();
       activated = true;
       //bulb = random(1,6);
-      setHue(bulb,activated, HueRed, dial);
-      //color++;
+      //setHue(bulb,activated, HueRainbow[color], dial);
+      color++;
       
       bri = myEnc.read();
       dial = map(bri, 0, 96, 0, 265);
@@ -146,7 +151,7 @@ void controlHUE() {
       pixels.show();
       pixels.clear();
       Values(dial);
-      Serial.println(dial);
+      //Serial.println(dial);
       if(bri>96){
         myEnc.write(96);
       }
@@ -175,7 +180,7 @@ void Values(float dial) {  //Brightness Values
 
 void displayBMEValues() {
   greenButton.tick();
-  if(buttonState2 == LOW) {
+  if(singleClick == LOW) {
     pixels.clear();
     pixels.show();
     }
@@ -230,17 +235,35 @@ void controlWEMODevices() {
        //delay(1000);
      }else{
        switchOFF(wemo);
-       //wemo++;
+       wemo++;
        //delay(1000);
      }
      state = buttonRead;
    }
-}
-
-void greenButtonClick() {
-  buttonState2 = (!buttonState2);
+   if(wemo > 3) {
+    wemo = 0;
+   }
 }
 
 void encButtonClick() {
   buttonState = (!buttonState);
+}
+
+void greenButtonClick() {
+  singleClick = (!singleClick);
+}
+
+void blueButtonDoubleClick() {
+  doubleClick = (!doubleClick);
+  if(doubleClick == LOW) {
+    display.clearDisplay();
+    display2.clearDisplay(); 
+  }
+  else
+  {
+    display.display();
+    display2.display();
+  }
+  Serial.println("doubleClick = ");
+  Serial.println(doubleClick);
 }
