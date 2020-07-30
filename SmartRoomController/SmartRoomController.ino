@@ -12,9 +12,9 @@
 #include <Wire.h>
 #include <Adafruit_NeoPixel.h>
 #include <colors.h>
-#include <hue.h>
-#include <mac.h>
-#include <wemo.h>
+#include "hue.h"
+#include "mac.h"
+#include "wemo.h"
 
 #include <Adafruit_BME280.h>
 #include <Adafruit_GFX.h>
@@ -25,26 +25,29 @@
 
 #define OLED_RESET    4
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 Adafruit_BME280 bme;
 float tempF;
 float pressinHg;
 float humidRH;
-int Tempvalue;
+int tempValue;
 bool status;
 
 
 Encoder myEnc(17,16);
 OneButton encButton(20, false);
+int pinEncButton = 20;
 int buttonState = LOW;
 int redPin = 21;
 int greenPin = 22;
 int ticks;
 int dial;
-int pixdial;
+int pixDial;
 int lockPos;
 
 OneButton greenButton(6, false);
+int pinGreenButton = 6;
 int buttonState2 = LOW;
 
 const int NeoPin = 14;
@@ -59,7 +62,7 @@ int color;         // select a color (4-byte format)
 int bri;            // select brightness (0-255)
 int Huebri = 265;
 
-int buttonPin = 23;
+int pinBlackButton = 23;
 bool state = true;
 bool buttonRead;
 int wemo = 3;
@@ -68,7 +71,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
 
-  pinMode(buttonPin, INPUT);
+  pinMode(pinBlackButton, INPUT);
   
   pixels.begin();
   pixels.clear();
@@ -81,17 +84,17 @@ void setup() {
   Serial.println(Ethernet.linkStatus());
   Serial.println("Ready.");
 
-  greenButton.attachClick(click2);
+  greenButton.attachClick(greenButtonClick);
   greenButton.setClickTicks(250);
   greenButton.setPressTicks(2000);
-  pinMode(6, INPUT);
+  pinMode(pinGreenButton, INPUT);
   
-  encButton.attachClick(click1);
+  encButton.attachClick(encButtonClick);
   encButton.setClickTicks(250);
   encButton.setPressTicks(2000);
-  pinMode(20, INPUT_PULLUP);
-  pinMode(21, OUTPUT);
-  pinMode(22, OUTPUT);
+  pinMode(pinEncButton, INPUT_PULLUP);
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
 
   status = bme.begin(0x76);
   if(status == false) {
@@ -102,20 +105,19 @@ void setup() {
     Serial.printf("BME is GOOD\n");
   }
 
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //Display Temp Values
+  display2.begin(SSD1306_SWITCHCAPVCC, 0x3D); //Display Brightness Values
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  BME();
-  HUE();
-  WEMO();
+  controlHUE();
+  displayBMEValues();
+  controlWEMODevices();
 }
 
-
-void HUE() {
+void controlHUE() {
   encButton.tick();
     if(buttonState == LOW) {
       digitalWrite(redPin, LOW);
@@ -138,12 +140,12 @@ void HUE() {
       
       bri = myEnc.read();
       dial = map(bri, 0, 96, 0, 265);
-      pixdial = map(dial, 0, 265, 0, 15);
+      pixDial = map(dial, 0, 265, 0, 15);
       pixels.setBrightness(10);
-      pixels.fill(yellow, 0, pixdial+1);
+      pixels.fill(yellow, 0, pixDial+1);
       pixels.show();
       pixels.clear();
-      
+      Values(dial);
       Serial.println(dial);
       if(bri>96){
         myEnc.write(96);
@@ -157,8 +159,21 @@ void HUE() {
   }
 }
 
+void Values(float dial) {  //Brightness Values
+    display2.clearDisplay();
 
-void BME() {
+    display2.setRotation(2);
+    display2.setTextSize(2);
+    display2.setCursor(0,0);
+    display2.setTextColor(SSD1306_WHITE);
+    
+    display2.printf("Hue Bri. = %0.f \n", dial);
+
+    display2.display();
+}
+
+
+void displayBMEValues() {
   greenButton.tick();
   if(buttonState2 == LOW) {
     pixels.clear();
@@ -172,44 +187,43 @@ void BME() {
     Values(tempF, pressinHg, humidRH);
     //delay(5000);
     
-    Tempvalue = map(tempF, 65, 80,1,15);
+    tempValue = map(tempF, 65, 80,1,15);
     pixels.setBrightness(10);
-    pixels.fill(blue, 0, Tempvalue);
-    if(Tempvalue > 3){
-      pixels.fill(orange, 3, Tempvalue - 3);
+    pixels.fill(blue, 0, tempValue);
+    if(tempValue > 3){
+      pixels.fill(orange, 3, tempValue - 3);
       }
-    if(Tempvalue > 8) {
-      pixels.fill (red, 8, Tempvalue - 8);
+    if(tempValue > 8) {
+      pixels.fill (red, 8, tempValue - 8);
       }
    
   pixels.show();
   }
 }
 
-void Values(float VtempF, float VpressinHg, float VhumidRH) {
-
-    display.clearDisplay();
+void Values(float VtempF, float VpressinHg, float VhumidRH) {  //Temperature Values
+   display.clearDisplay();
 
     display.setRotation(2);
-    display.setTextSize(1);
+    display.setTextSize(2);
     display.setCursor(0,0);
     display.setTextColor(SSD1306_WHITE);
 
     //Serial.printf("Temp. = %0.2f *F\n", VtempF);
-    display.printf("Temp. = %0.2f *F\n", VtempF);
+    display.printf("Rm Temp. = %0.2f *F\n", VtempF);
 
     //Serial.printf("Press. = %0.2f inHg\n", VpressinHg);   
-    display.printf("Press. = %0.2f inHg\n", VpressinHg);   
+   // display.printf("Press. = %0.2f inHg\n", VpressinHg);   
     
     //Serial.printf("Humi. = %0.2f \n", VhumidRH);
-    display.printf("Humi. = %0.2f \n", VhumidRH);
+    //display.printf("Humi. = %0.2f \n", VhumidRH);
 
-    Serial.printf("\n");
+    //Serial.printf("\n");
     display.display();
 }
 
-void WEMO() {
-  buttonRead = digitalRead(buttonPin);
+void controlWEMODevices() {
+  buttonRead = digitalRead(pinBlackButton);
    if (buttonRead != state){
      if (buttonRead==true){
        switchON(wemo);
@@ -223,10 +237,10 @@ void WEMO() {
    }
 }
 
-void click2() {
+void greenButtonClick() {
   buttonState2 = (!buttonState2);
 }
 
-void click1() {
+void encButtonClick() {
   buttonState = (!buttonState);
 }
