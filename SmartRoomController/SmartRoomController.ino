@@ -62,7 +62,7 @@ Adafruit_NeoPixel pixels(PixelNum, NeoPin, NEO_GRB + NEO_KHZ800);
 
 IPAddress ip(192,168,1,18);  // Teensy IP
 boolean activated;  // true for bulb on, falso for off
-int bulb = 1;           // select which bulb (1 to 5)
+int bulb = 1;         // select which bulb (1 to 5)
 int color;         // select a color (4-byte format)
 int bri;            // select brightness (0-255)
 int Huebri = 265;
@@ -84,7 +84,6 @@ void setup() {
   pinMode(10, OUTPUT);
   digitalWrite(10, HIGH);
   Ethernet.begin(mac,ip);
-  //delay(2000);              // Wait for Serial Monitor
   //Serial.print("LinkStatus: ");
   //Serial.println(Ethernet.linkStatus());
   //Serial.println("Ready.");
@@ -97,7 +96,8 @@ void setup() {
   blueButton.attachDoubleClick(blueButtonDoubleClick);
   blueButton.setClickTicks(250);
   blueButton.setPressTicks(2000);
-  //pinMode(pinBlueButton, INPUT);
+  blueButton.setDebounceTicks(50);
+  pinMode(pinBlueButton, INPUT);
 
   
   encButton.attachClick(encButtonClick);
@@ -116,10 +116,10 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
+  blueButton.tick();
   controlHUE();
   displayBMEValues();
   controlWEMODevices();
-  blueButton.tick();
 }
 
 void controlHUE() {
@@ -129,7 +129,9 @@ void controlHUE() {
       digitalWrite(greenPin, HIGH);
       myEnc.write(lockPos);
       activated = false; 
-      //setHue(bulb,activated, 0,0);
+      for(int i = 1; i<=6; i++){
+        //setHue(i,activated, 0,0);
+      }
       pixels.show();
       pixels.clear();
     }
@@ -139,9 +141,10 @@ void controlHUE() {
       digitalWrite(greenPin, LOW);
       lockPos = myEnc.read();
       activated = true;
-      //bulb = random(1,6);
-      //setHue(bulb,activated, HueRainbow[color], dial);
-      color++;
+      for(int i = 1; i<=6; i++) {
+        //setHue(i,activated, HueRainbow[color], dial);
+      }
+      //color++;
       
       bri = myEnc.read();
       dial = map(bri, 0, 96, 0, 265);
@@ -151,7 +154,6 @@ void controlHUE() {
       pixels.show();
       pixels.clear();
       Values(dial);
-      //Serial.println(dial);
       if(bri>96){
         myEnc.write(96);
       }
@@ -190,7 +192,6 @@ void displayBMEValues() {
     pressinHg = (bme.readPressure() * 0.00029530);
     humidRH = bme.readHumidity();
     Values(tempF, pressinHg, humidRH);
-    //delay(5000);
     
     tempValue = map(tempF, 65, 80,1,15);
     pixels.setBrightness(10);
@@ -218,7 +219,7 @@ void Values(float VtempF, float VpressinHg, float VhumidRH) {  //Temperature Val
     display.printf("Rm Temp. = %0.2f *F\n", VtempF);
 
     //Serial.printf("Press. = %0.2f inHg\n", VpressinHg);   
-   // display.printf("Press. = %0.2f inHg\n", VpressinHg);   
+    //display.printf("Press. = %0.2f inHg\n", VpressinHg);   
     
     //Serial.printf("Humi. = %0.2f \n", VhumidRH);
     //display.printf("Humi. = %0.2f \n", VhumidRH);
@@ -229,14 +230,14 @@ void Values(float VtempF, float VpressinHg, float VhumidRH) {  //Temperature Val
 
 void controlWEMODevices() {
   buttonRead = digitalRead(pinBlackButton);
-   if (buttonRead != state){
-     if (buttonRead==true){
+   if (buttonRead != state) {
+     if (buttonRead==true) {
        switchON(wemo);
-       //delay(1000);
-     }else{
+     }
+     else
+     {
        switchOFF(wemo);
        wemo++;
-       //delay(1000);
      }
      state = buttonRead;
    }
@@ -258,6 +259,8 @@ void blueButtonDoubleClick() {
   if(doubleClick == LOW) {
     display.clearDisplay();
     display2.clearDisplay(); 
+    display.display();
+    display2.display();
   }
   else
   {
