@@ -12,9 +12,9 @@
 #include <Wire.h>
 #include <Adafruit_NeoPixel.h>
 #include <colors.h>
-#include "hue.h"
-#include "mac.h"
-#include "wemo.h"
+#include <hue.h>
+#include <mac.h>
+#include <wemo.h>
 
 #include <Adafruit_BME280.h>
 #include <Adafruit_GFX.h>
@@ -60,12 +60,13 @@ const int PixelNum = 16;
 Adafruit_NeoPixel pixels(PixelNum, NeoPin, NEO_GRB + NEO_KHZ800);
 
 
-IPAddress ip(192,168,1,18);  // Teensy IP
+IPAddress ip(192,168,1,21);  // Teensy IP
 boolean activated;  // true for bulb on, falso for off
 int bulb = 1;         // select which bulb (1 to 5)
 int color;         // select a color (4-byte format)
 int bri;            // select brightness (0-255)
 int Huebri = 265;
+int hueArray[] = {HueBlue, HueYellow, HueRed};
 
 int pinBlackButton = 23;
 bool state = true;
@@ -93,7 +94,7 @@ void setup() {
   greenButton.setPressTicks(2000);
   pinMode(pinGreenButton, INPUT);
 
-  blueButton.attachDoubleClick(blueButtonDoubleClick);
+  blueButton.attachLongPressStart(blueButtonLongPress);
   blueButton.setClickTicks(250);
   blueButton.setPressTicks(2000);
   blueButton.setDebounceTicks(50);
@@ -130,7 +131,7 @@ void controlHUE() {
       myEnc.write(lockPos);
       activated = false; 
       for(int i = 1; i<=6; i++){
-        //setHue(i,activated, 0,0);
+        setHue(i,activated, 0,0);
       }
       pixels.show();
       pixels.clear();
@@ -142,28 +143,25 @@ void controlHUE() {
       lockPos = myEnc.read();
       activated = true;
       for(int i = 1; i<=6; i++) {
-        //setHue(i,activated, HueRainbow[color], dial);
+        setHue(i,activated, HueYellow, dial);
       }
-      //color++;
       
       bri = myEnc.read();
       dial = map(bri, 0, 96, 0, 265);
       pixDial = map(dial, 0, 265, 0, 15);
       pixels.setBrightness(10);
-      pixels.fill(yellow, 0, pixDial+1);
+      pixels.fill(green, 0, pixDial+1);
       pixels.show();
       pixels.clear();
       Values(dial);
+      
       if(bri>96){
         myEnc.write(96);
-      }
-        if(bri<0){
+        }
+      if(bri<0){
         myEnc.write(0);
         }
     }
-   if (color>6) {
-    color = 0;
-  }
 }
 
 void Values(float dial) {  //Brightness Values
@@ -179,12 +177,13 @@ void Values(float dial) {  //Brightness Values
     display2.display();
 }
 
-
 void displayBMEValues() {
   greenButton.tick();
   if(singleClick == LOW) {
-    pixels.clear();
-    pixels.show();
+    //pixels.clear();
+    //pixels.show();
+    activated = false;
+    //setHue(bulb, activated, 0,0);
     }
    else
     {
@@ -192,7 +191,13 @@ void displayBMEValues() {
     pressinHg = (bme.readPressure() * 0.00029530);
     humidRH = bme.readHumidity();
     Values(tempF, pressinHg, humidRH);
-    
+
+    activated = true;
+    tempValue = map(tempF, 65, 80, 0, 2);
+    for(int i = 1; i<=6; i++) {
+      setHue(i,activated,hueArray[tempValue], Huebri);
+    }
+    /*
     tempValue = map(tempF, 65, 80,1,15);
     pixels.setBrightness(10);
     pixels.fill(blue, 0, tempValue);
@@ -203,7 +208,7 @@ void displayBMEValues() {
       pixels.fill (red, 8, tempValue - 8);
       }
    
-  pixels.show();
+  pixels.show();*/
   }
 }
 
@@ -254,19 +259,14 @@ void greenButtonClick() {
   singleClick = (!singleClick);
 }
 
-void blueButtonDoubleClick() {
-  doubleClick = (!doubleClick);
-  if(doubleClick == LOW) {
-    display.clearDisplay();
-    display2.clearDisplay(); 
-    display.display();
-    display2.display();
-  }
-  else
-  {
-    display.display();
-    display2.display();
-  }
-  Serial.println("doubleClick = ");
+void blueButtonLongPress() {
+  singleClick = false;
+  buttonState = false;
+  display.clearDisplay();
+  display2.clearDisplay(); 
+  display.display();
+  display2.display();
+
+  Serial.print("doubleClick = ");
   Serial.println(doubleClick);
 }

@@ -57,7 +57,7 @@ boolean setHue(int lightNum, bool HueOn, int HueColor, int HueBright) {
       HueClient.print(hueUsername);
       HueClient.print("/lights/");
       HueClient.print(lightNum);  // hueLight zero based, add 1
-      //  HueClient.println("/state");
+      HueClient.println("/state");
       HueClient.println("/state HTTP/1.1");
       HueClient.println("keep-alive");
       HueClient.print("Host: ");
@@ -105,11 +105,11 @@ boolean getHue(int lightNum)
  
         HueClient.findUntil("\"bri\":", "\0");
         hueBri = HueClient.readStringUntil(',').toInt();  // set variable to brightness value
-        //Serial.println(hueBri);
+        Serial.println(hueBri);
         
         HueClient.findUntil("\"hue\":", "\0");
         hueHue = HueClient.readStringUntil(',').toInt();  // set variable to hue value
-        //Serial.println(hueHue);
+        Serial.println(hueHue);
         
         break;  // not capturing other light attributes yet
       }
