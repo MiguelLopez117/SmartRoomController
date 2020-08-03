@@ -72,6 +72,9 @@ int pinBlackButton = 23;
 bool state = true;
 bool buttonRead;
 int wemo = 0;
+int startTime;
+int endTime;
+int sumTime;
 
 void setup() {
   // put your setup code here, to run once:
@@ -85,9 +88,9 @@ void setup() {
   pinMode(10, OUTPUT);
   digitalWrite(10, HIGH);
   Ethernet.begin(mac,ip);
-  //Serial.print("LinkStatus: ");
-  //Serial.println(Ethernet.linkStatus());
-  //Serial.println("Ready.");
+  Serial.print("LinkStatus: ");
+  Serial.println(Ethernet.linkStatus());
+  Serial.println("Ready.");
 
   greenButton.attachClick(greenButtonClick);
   greenButton.setClickTicks(250);
@@ -120,7 +123,7 @@ void loop() {
   blueButton.tick();
   controlHUE();
   displayBMEValues();
-  controlWEMODevices();
+  controlWEMODevices();  
 }
 
 void controlHUE() {
@@ -180,10 +183,8 @@ void Values(float dial) {  //Brightness Values
 void displayBMEValues() {
   greenButton.tick();
   if(singleClick == LOW) {
-    //pixels.clear();
-    //pixels.show();
     activated = false;
-    //setHue(bulb, activated, 0,0);
+    setHue(bulb, activated, 0,0);
     }
    else
     {
@@ -197,18 +198,6 @@ void displayBMEValues() {
     for(int i = 1; i<=6; i++) {
       setHue(i,activated,hueArray[tempValue], Huebri);
     }
-    /*
-    tempValue = map(tempF, 65, 80,1,15);
-    pixels.setBrightness(10);
-    pixels.fill(blue, 0, tempValue);
-    if(tempValue > 3){
-      pixels.fill(orange, 3, tempValue - 3);
-      }
-    if(tempValue > 8) {
-      pixels.fill (red, 8, tempValue - 8);
-      }
-   
-  pixels.show();*/
   }
 }
 
@@ -220,35 +209,26 @@ void Values(float VtempF, float VpressinHg, float VhumidRH) {  //Temperature Val
     display.setCursor(0,0);
     display.setTextColor(SSD1306_WHITE);
 
-    //Serial.printf("Temp. = %0.2f *F\n", VtempF);
     display.printf("Rm Temp. = %0.2f *F\n", VtempF);
-
-    //Serial.printf("Press. = %0.2f inHg\n", VpressinHg);   
-    //display.printf("Press. = %0.2f inHg\n", VpressinHg);   
-    
-    //Serial.printf("Humi. = %0.2f \n", VhumidRH);
-    //display.printf("Humi. = %0.2f \n", VhumidRH);
-
-    //Serial.printf("\n");
     display.display();
 }
 
 void controlWEMODevices() {
-  buttonRead = digitalRead(pinBlackButton);
+  buttonRead = digitalRead(pinBlackButton);   
    if (buttonRead != state) {
-     if (buttonRead==true) {
-       switchON(wemo);
-     }
-     else
-     {
+     if (buttonRead==false) {
        switchOFF(wemo);
+      }
+      else
+      {
+       switchON(wemo);
        wemo++;
-     }
+      }
      state = buttonRead;
-   }
-   if(wemo > 3) {
-    wemo = 0;
-   }
+    }
+    if(wemo > 3) {
+      wemo = 0;
+     }
 }
 
 void encButtonClick() {
