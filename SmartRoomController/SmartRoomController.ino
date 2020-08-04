@@ -194,7 +194,8 @@ void displayBMEValues() {
     Values(tempF, pressinHg, humidRH);
 
     activated = true;
-    tempValue = map(tempF, 65, 80, 0, 2);
+    tempValue = map(tempF, 65, 75, 0, 2);
+    bri = 200;
     for(int i = 1; i<=6; i++) {
       setHue(i,activated,hueArray[tempValue], Huebri);
     }
